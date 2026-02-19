@@ -1,0 +1,131 @@
+CV Summary – Mohammad Ismaeel
+
+Mohammad Ismaeel is a Software Developer with extensive experience in cloud-native systems, SDN controllers, web and mobile development, and DevOps. He has the legal right to work in Romania (Romanian work permit) and is currently based in Timișoara, Romania.
+
+Personal & Contact Information
+
+Date of Birth: 04/11/1993
+
+Place of Birth: Banias, Syria
+
+Nationality: Syrian
+
+Gender: Male
+
+Work Authorization: Legal right to work in Romania (no visa required)
+
+Location: Timișoara, Romania
+
+Email: mohammadismael962@gmail.com
+
+Phone: +40 732 066 124
+
+LinkedIn: linkedin.com/in/mohammad-ismael-755ba4199
+
+GitHub: github.com/ab3adel
+Professional Experience
+Software Developer – CNIT (Remote)
+
+May 2023 – December 2025
+
+Core contributor to TeraFlowSDN Controller, an open-source, cloud-native, microservice-based, carrier-grade SDN controller integrating NFV and MEC frameworks.
+
+Developed drivers for optical network devices and extended infrastructure-layer capabilities.
+
+Implemented path-finding algorithms, auto-discovery of network topology, and real-time database updates.
+
+Managed device configuration storage and orchestration.
+
+Ensured continuous testing and software quality throughout development.
+
+Co-authored and published a research paper at OFC 2024 (Optical Fiber Communication Conference).
+
+Technologies: Python, Kubernetes, CockroachDB, NATS, QuestDB, Java
+
+Software Developer – JaiaSoft (On-site, Syria)
+
+January 2022 – May 2023
+
+Developed multiple web and mobile applications.
+
+Key project: workshop.jaiasoft.com, a full automation system for glass workshops covering ordering, pricing, production, delivery, billing, reporting, and workflow closure.
+
+Developed Altafouq App, a mobile application for private schools enabling lecture downloads, schedules, exams, activities, and real-time online classes.
+
+Backend built with NestJS and Socket.io, frontend with React Native.
+
+Maintained and extended existing Angular projects.
+
+Technologies: TypeScript, JavaScript, React, Next.js, React Native, Node.js, NestJS, MongoDB, Socket.io
+
+Software Developer – Ikoniks (Remote, Stuttgart, Germany)
+
+January 2020 – June 2020
+
+Worked on Wodex.app, a platform for sports clubs (gyms, football, basketball, etc.).
+
+Enabled users to discover clubs, enroll in courses, and request private training.
+
+Built dashboards for club owners to manage services, offers, and enrollments.
+
+Implemented PWA features, Firebase services, unit testing, ESLint, and best practices.
+
+Participated in migration from native Android/iOS apps to React Native.
+
+Technologies: TypeScript, React, Next.js, JavaScript, React Native, Firebase
+
+Freelance Software Developer – Syria
+
+October 2018 – December 2019
+
+Developed a desktop accounting application for small businesses using C# and WPF, with MySQL backend.
+
+Implemented modules for inventory, sales, refunds, expenses, and archives.
+
+Contributed to web applications including restaurant systems (UI redesign and feature additions).
+
+Worked as a Full-Stack Developer using Django, React, Redux, and NoSQL databases.
+
+Set up CI/CD pipelines with GitLab, runners, and automated QA processes.
+
+Emphasized clean, tested code and technical documentation.
+
+Technologies: C#, WPF, .NET, MySQL, Django, React, Redux, MongoDB, GitLab CI/CD
+
+Education
+
+Bachelor’s Degree in Communications and Electronic Engineering
+Tishreen University
+2012 – 2019
+
+Coursework: OOP, Web Development, Network Programming, Algorithms
+
+Graduation project: Wireless sensor system using Arduino for:
+
+Soil humidity and temperature monitoring
+
+Automatic remote valve control for irrigation
+
+Language Skills
+
+Arabic: Native
+
+English: C1 (Listening, Reading, Writing), B2 (Speaking)
+
+German: B1 (Listening, Reading), A2 (Speaking, Writing)
+
+Romanian: B2 (Listening, Reading), B1 (Speaking, Writing)
+
+Technical Skills
+
+Backend: Node.js, Express, NestJS, Django, Python, Asyncio, gRPC (basic), Protobuf (basic)
+
+Frontend: React, React Native, Next.js, Redux, TypeScript, JavaScript
+
+.NET: .NET / .NET Core, WPF
+
+Databases: MongoDB, MySQL, CockroachDB, QuestDB
+
+DevOps & Cloud: Docker, Kubernetes, Jenkins, Terraform, DigitalOcean, Azure
+
+Other: Socket.io, CI/CD, Microservices, Cloud-native architectures

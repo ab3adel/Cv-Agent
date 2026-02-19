@@ -1,0 +1,154 @@
+ABOUT ME
+I have the legal right to work in Romania without requiring a work visa.
+Mohammad Ismaeel
+Work permit: Romanian
+Date of birth: 04/11/1993
+Place of birth: Banias, Syria
+Nationality: Syrian
+Gender: Male
+CONTACT
+Timisoara - Romania, Strada
+Daliei 17
+300558 Timisoara, Romania
+(Home)
+mohammadismael962@gmail.c
+om
+(+40) 0732066124
+https://www.linkedin.com/in/
+mohammad-
+ismael-755ba4199/
+https://github.com/ab3adel (Gi
+thub)
+WORK EXPERIENCE
+oftware developers (Remotely)
+01/05/2023 – 01/12/2025
+Developing TeraFlowSDN Controller which is one of the first open-source,
+microservice based, cloud-native and carrier-grade SDN controller capable of
+integrating with current NFV and MEC frameworks as well as to provide
+revolutionary features for both flow management (service layer), and network
+equipment integration (infrastructure layer), For more details about
+TeraFlowSDN : https://www.teraflow-h2020.eu/
+At CNIT, we have published a research paper at OFC (Optical Fiber
+Communication Conference and Exhibition). The paper sheds light on a part of
+our work. Feel free to check it out : https://opg.optica.org/abstract.cfm?
+uri=OFC-2024-Th2A.2
+programming languages and tools : Python , kubernetes , CockroachDB , nats ,
+QuestDB , Java .
+main tasks and responsibilities :
+• Extending the software ability to work with optical devices by coding
+drivers for these devices
+• Applying algorithms for finding the best path and connecting the devices
+to.
+• Applying auto discovery for the topology and updating the database in
+real-time .
+• Store and configure the configurations of connected devices
+• Continuous testing and evaluate the software quality across the
+software development
+////
+JaiaSoft : (On Site)
+Software developer
+01/01/2022 – 01/05/2023
+Developed multiple web and mobile applications providing a variety of
+services. One of the key projects is workshop.jaiasoft.com, a full-featured
+system designed for glass workshops. The system automates the entire
+workflow, including service ordering, price calculation, production initiation,
+delivery management, billing, report generation, and process closure.
+Another major project is Altafouq App, a mobile application developed for pri
+vate schools. The app enables students to download lectures, follow school
+schedules, and stay informed about exams and social activities. It also
+supports real-time live sessions, allowing teachers to conduct online classes.
+The backend was built using NestJS and Socket.io, while the frontend was
+developed with React Native.
+• programming languages and tools :
+• TypeScript, JavaScript
+• React, Next.js, React Native
+• Node.js, NestJS
+• MongoDB, NoSQL
+• Socket.io
+tasks and responsibilities :
+• Worked as a Software Developer at JaiaSoft, a software company
+based in Syria
+• Designed and implemented frontend interfaces using React, React
+Native, TypeScript, Redux, Material Design, SCSS
+• Built and maintained backend servers using NestJS, Node.js, Socket.io,
+and NoSQL databases for real-time applications
+• Maintained and extended existing Angular projects by adding new
+features (e.g., service details pages)
+///////
+Ikoniks stuttgart, Germany 
+Software developer (Remotely)
+01/01/2020 – 01/06/2020
+Wodex.app: Developing platform dedicated for sport clubs , it list various sport clubs like Gyms , football
+club , basketball club ..etc , it provide different services based on user type , club owner or normal user .
+normal user can explore the variety of clubs available in his region , enroll in courses , and request private
+training sessions.
+while the owner will have a dashboard for showing its club's services , courses , and offers , with the ability
+to to accept or reject the user enrollment.
+programming languages and tools : Typescript , React , Next , Javascript
+tasks and responsibilities :
+• web developer in VigourApp based in Dubai in united Arab Emirates in .
+• Creating custom user interfaces based on the mock-ups and the approved designs using React Typescript
+with CSS/SCSS and HTML.
+• Applying PWA in the project using Service Register and Fire base cloud service
+• Coding the needed test units to ensure that the code runs safe in production.
+• Using eslint, unit testing and best practices to deliver high quality and clean code.
+• Migrating existing native Android/iOS to React Native.
+• Participating with other Software Developers to ensure closing of tickets (New features ,Bugs...etc) on time
+and with respect to deadlines
+/////////
+Freelancer : Syria 
+Software developer
+01/10/2018 – 01/12/2019
+I implemented Account App using WPF.Net / C# according to the client wishes , the app is designated to work
+with small business with taking in consideration for any future planes to enlarge the app functionality , It
+consists from 5 sections , store where user can input his products with its prices and selling prices , the sale
+section with ability to return any sale and refund the customer , and the other 3 sections are for the inventories
+, archive and expenses operations .
+I used in this app : C# , WPF.Net framework , with MySQL for backend and XAML for frontend .
+I worked on some side web apps with another partner , one of them was doing some modifications on
+restaurants app , add new interfaces and change the general theme of the app
+• Full Stack Developer with M&M team
+• Developing Backend Django web applications, database structures (MongoDB, MySQL,) and designing the
+Frontend with React TypeScript and Redux.
+• Prepare the needed Pipelines, Runners and configurations on Gitlab to fasten our deployment with CI/ CD
+and to automate our QA procedures.
+• Coding a very clean and tested code and maintaining related documentations and
+Ikoniks stuttgart, Germany
+Vigourapp Dubai , United Arab Emirates
+
+///////
+EDUCATION AND TRAINING
+Communications and Electronic Engineering Tishreen University 
+I have attended courses in :OOP, Web development , Networks Programming ,Algorithms
+designed a wireless sensor system based on Arduino for:
+- monitoring humidity and temperature in the soil,
+- auto-controlling remote valves for watering the soil when needed
+
+LANGUAGE SKILLS
+MOTHER TONGUE(S): Arabic
+Other language(s):
+English
+Listening C1
+Spoken production B2
+Reading C1
+Spoken interaction B2
+Writing C1
+German
+Listening B1
+Spoken production A2
+Reading B1
+Spoken interaction A2
+Writing A2
+Romanian
+Listening B2
+Spoken production B1
+Reading B2
+Spoken interaction B1
+Writing B1
+Levels: A1 and A2: Basic user; B1 and B2: Independent user; C1 and C2: Proficient user
+SKILLS
+.NET / .NET Core .Net WPF React ecosystem: ReactJS, React Router, Redux, Typescript Next js Backend: NodeJS,
+Express, socket.io Python, Django, Asyncio gRPC, Protobuf (basic) Devops: Docker, Jenkins React Native
+Nest Terraform Digitalocean Azure
+09/09/2012 – 01/12/2019
+
