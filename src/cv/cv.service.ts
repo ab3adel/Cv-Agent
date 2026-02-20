@@ -8,6 +8,8 @@ import {Response} from 'express'
 import { OLLAMA_URL, PIPER_URL } from 'src/core/constants';
 import { QuestionDto } from './dto/create-cv.dto';
 import { Observable } from 'rxjs';
+import { MessageUpdaterService } from 'src/message-updater/message-updater.service';
+import { questionTypeEnum } from 'src/responder/tools/interfaces';
 
 type TTSJob = {
   seq: number;
@@ -31,30 +33,10 @@ export class CvService {
     private activeRequestId :null|string;
     constructor(
          private readonly responder:ResponderService ,
-        private readonly warmer : OllamaWarmer 
+        private readonly warmer : OllamaWarmer ,
+        private readonly MessageUpdater :MessageUpdaterService
 ){}
 
-
- messageUpdater ():Observable<MessageEvent> {
-  return new Observable(observer => {
-
-      observer.next({ data: { status: 'Analyzing question...' } });
-
-      setTimeout(() => {
-        observer.next({ data: { status: 'Searching CV...' } });
-      }, 1500);
-
-      setTimeout(() => {
-        observer.next({ data: { status: 'Generating answer...' } });
-      }, 3000);
-
-      setTimeout(() => {
-        observer.next({ data: { final: 'Here is the answer...' } });
-        observer.complete();
-      }, 6000);
-
-    });
-}
 
 async askModel (questiobBody:QuestionDto):Promise<any> {
      let {key,text,userId,assistantAnswer}= questiobBody
@@ -74,8 +56,15 @@ async askModel (questiobBody:QuestionDto):Promise<any> {
 
     this.queueWaiters.forEach(r => r());
     this.queueWaiters = [];
-   
+     this.MessageUpdater.send(key,"Analyzing the question ...")
     
+    const questionType = this.responder.detectIntent(text)
+    if (questionType === questionTypeEnum.isCvContent){
+        this.MessageUpdater.send(key,"Searching the CV ...")
+    }
+    else {
+      this.MessageUpdater.send(key,"Thinking ...")
+    }
     const res =  await fetch(OLLAMA_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -85,7 +74,7 @@ async askModel (questiobBody:QuestionDto):Promise<any> {
       stream: true,
     }),
   });
-     
+     this.MessageUpdater.send(key,"Generating the Answer")
       return res
 
 

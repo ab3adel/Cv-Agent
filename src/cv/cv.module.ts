@@ -5,9 +5,11 @@ import { ResponderModule } from 'src/responder/responder.module';
 import { CvService } from './cv.service';
 import { OllamaWarmer } from 'src/core/ollamaWarmer';
 
+import { MessageUpdaterModule } from 'src/message-updater/message-updater.module';
+
 @Module({
   controllers: [CvController],
   providers: [CvService,OllamaWarmer],
-  imports: [ResponderModule]
+  imports: [ResponderModule,MessageUpdaterModule]
 })
 export class CvModule {}
