@@ -1,17 +1,18 @@
 import { Injectable, OnModuleInit } from "@nestjs/common";
 import axios from "axios";
+import { OLLAMA_ONLINE, OLLAMA_URL } from "./constants";
 
 @Injectable()
 export class OllamaWarmer implements OnModuleInit {
   private warmed = false;
-   private readonly OLLAMA_URL ='http://ollama:11434/api/generate'
+
 
   async onModuleInit() {
     console.log('🔥 Waiting for Ollama...');
 
     for (let i = 0; i < 10; i++) {
       try {
-        await axios.post(this.OLLAMA_URL, {
+        await axios.post(OLLAMA_URL, {
           //model: 'qwen2.5:1.5b-instruct',
           model:"mohammad-cv-agent",
           prompt: 'ping',

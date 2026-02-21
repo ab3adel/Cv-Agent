@@ -7,7 +7,6 @@ import { OllamaWarmer } from 'src/core/ollamaWarmer';
 import {Response} from 'express'
 import { OLLAMA_URL, PIPER_URL } from 'src/core/constants';
 import { QuestionDto } from './dto/create-cv.dto';
-import { Observable } from 'rxjs';
 import { MessageUpdaterService } from 'src/message-updater/message-updater.service';
 import { questionTypeEnum } from 'src/responder/tools/interfaces';
 
@@ -65,6 +64,7 @@ async askModel (questiobBody:QuestionDto):Promise<any> {
     else {
       this.MessageUpdater.send(key,"Thinking ...")
     }
+    console.time("TTFT")
     const res =  await fetch(OLLAMA_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -75,6 +75,7 @@ async askModel (questiobBody:QuestionDto):Promise<any> {
     }),
   });
      this.MessageUpdater.send(key,"Generating the Answer")
+     this.MessageUpdater.complete(key);
       return res
 
 
@@ -89,6 +90,7 @@ async streamText (res:Response,answer:any ,key:string,userId:string) {
      let ttsBuffer =''
 
     let buffer = '';
+    let firstChunk = true;
 
     let streamEnded = false;
 
@@ -119,16 +121,17 @@ async streamText (res:Response,answer:any ,key:string,userId:string) {
           const json = JSON.parse(line);
          
           if (json.response) {
-          
-                      
-            if (json.response.includes('_MEMORY_FALSE_') ||json.response.includes('_MEMORY_TRUE_') ) {
-             console.log("memory",json.response)
+           
+            if (firstChunk){
+                firstChunk=false
+                console.timeEnd("TTFT")
             }
-            else {
-                fullText += json.response;
+                      
+         
+              fullText += json.response;
                 ttsBuffer += json.response;
               res.write(json.response);
-            }
+            
             
 
             if (
@@ -156,6 +159,7 @@ async streamText (res:Response,answer:any ,key:string,userId:string) {
      
       }
 } 
+
 async generateSpeech(text: string): Promise<Buffer> {
   console.time("G Speech:")
   const response = await axios.post(
