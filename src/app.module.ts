@@ -4,11 +4,13 @@ import { AppService } from './app.service';
 import { CvModule } from './cv/cv.module';
 import { ResponderModule } from './responder/responder.module';
 import { MessageUpdaterModule } from './message-updater/message-updater.module';
+import { ActionsModule } from './actions/actions.module';
+import { NotifierModule } from './notifier/notifier.module';
 
   //ContextIdFactory.apply(new AggreateByTenantContextIdStrategy())
 
 @Module({
-  imports: [CvModule, ResponderModule, MessageUpdaterModule],
+  imports: [CvModule, ResponderModule, MessageUpdaterModule, ActionsModule, NotifierModule],
   controllers: [AppController],
   providers: [AppService],
 })

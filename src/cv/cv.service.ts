@@ -10,51 +10,40 @@ import { QuestionDto } from './dto/create-cv.dto';
 import { MessageUpdaterService } from 'src/message-updater/message-updater.service';
 import { questionTypeEnum } from 'src/responder/tools/interfaces';
 
-type TTSJob = {
-  seq: number;
-  text: string;
-  key:string|null
-};
+import { abortPromise, sleep } from 'src/core/tools';
+import { once } from 'events';
+import { RequestContext } from './interfaces/request';
+import { capture_cation, capture_email, check_action } from './tools/regex';
+import { ActionsService } from 'src/actions/actions.service';
+import { NotifierService } from 'src/notifier/notifier.service';
+
+
 
 @Injectable()
 export class CvService {
 
-    private audioQueue: Buffer[] = [];
-    private MAX_TTS_WORKERS = 3;
-    private activeWorkers = 0;
-    private processing = false;
-    private audioMap = new Map<number, Buffer>();
-    private nextAudioSeq = 0;
-    private seq = 0;
-    private ttsTextQueue: TTSJob[] = [];
-    private audioWaiters: (() => void)[] = [];
-    private queueWaiters : (() => void)[] = [];
-    private activeRequestId :null|string;
+    private requests : Map<string,RequestContext>= new Map()
     constructor(
          private readonly responder:ResponderService ,
         private readonly warmer : OllamaWarmer ,
-        private readonly MessageUpdater :MessageUpdaterService
+        private readonly MessageUpdater :MessageUpdaterService,
+        private readonly actions : ActionsService,
+        private readonly notifier : NotifierService
 ){}
 
 
 async askModel (questiobBody:QuestionDto):Promise<any> {
+
      let {key,text,userId,assistantAnswer}= questiobBody
-    this.activeRequestId=key
-    this.audioQueue = [];
-    this.audioMap.clear();
-    this.ttsTextQueue = [];
-   
-    this.seq = 0;
-    this.nextAudioSeq = 0;
-
-    this.processing = false;
-    this.activeWorkers = 0;
-
-    this.audioWaiters.forEach(r => r());
-    this.audioWaiters = [];
-
-    this.queueWaiters.forEach(r => r());
-    this.queueWaiters = [];
+     const existing = this.requests.get(key)
+     if (existing){
+      existing.abortController.abort()
+      
+     }
+     const context = new RequestContext(key)
+     this.requests.set(key,context)
+    
+    
      this.MessageUpdater.send(key,"Analyzing the question ...")
     
     const questionType = this.responder.detectIntent(text)
@@ -70,8 +59,15 @@ async askModel (questiobBody:QuestionDto):Promise<any> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       model: 'mohammad-cv-agent',
-      prompt:this.responder.get_prompt(text,userId),
+      prompt:`
+          SYSTEM:
+          ${this.responder.get_systme_prompt()}
+
+          USER:
+          ${this.responder.get_prompt(text, userId)}
+      `,
       stream: true,
+      
     }),
   });
      this.MessageUpdater.send(key,"Generating the Answer")
@@ -83,11 +79,17 @@ async askModel (questiobBody:QuestionDto):Promise<any> {
 }
 
 async streamText (res:Response,answer:any ,key:string,userId:string) {
+
    const reader = answer.body!.getReader();
     const decoder = new TextDecoder();
+    const context = this.requests.get(key)
+    if (context?.abortController.signal.aborted)return
 
      let fullText = '';
      let ttsBuffer =''
+     let action:RegExpMatchArray|null = null
+     let detected_action = ''
+     let start_action = false
 
     let buffer = '';
     let firstChunk = true;
@@ -102,13 +104,26 @@ async streamText (res:Response,answer:any ,key:string,userId:string) {
 
       while (!streamEnded) {
         const { value, done } = await reader.read();
-        if (done) break;
-        if (this.activeRequestId !== key) {
+        if (done) {
+           
+           if(context) {
+            context.isTextDone=true
+            context.notifyAudio();
+          }
+          break
+        };
+   
+        if (context?.key !== key) {
             // stop generating old response
               await reader.cancel();
               res.end();
               return;
           }
+          if (context?.abortController.signal.aborted) {
+              await reader.cancel();
+              res.end();
+              return;
+            }
               
         buffer += decoder.decode(value, { stream: true });
 
@@ -126,11 +141,59 @@ async streamText (res:Response,answer:any ,key:string,userId:string) {
                 firstChunk=false
                 console.timeEnd("TTFT")
             }
-                      
-         
-              fullText += json.response;
-                ttsBuffer += json.response;
-              res.write(json.response);
+                  fullText += json.response;
+                  console.log('full text',fullText)
+                 if (!start_action && (check_action(json.response) || capture_cation(json.response))) {
+                      start_action = true;
+                    }
+
+                if (start_action){
+                  detected_action +=json.response
+                  action = capture_cation(detected_action)
+                  console.log('action',action)
+                  if (action) {
+                     
+                     if (action[1]==='SEND_EMAIL') {
+                          console.log('detected_action',detected_action)
+                          let email_action = capture_email(detected_action)
+                        if (email_action ){
+                             console.log('email captured',email_action)
+                             console.log('key',key)
+                                start_action=false
+                                let email_status= email_action[2]
+                                let email_content =email_action[1]
+                                
+                            this.actions.send(key,action[1] ,email_status+'/'+email_content)
+                            if (email_status ==='APPROVED'){
+                                this.notifier.sendEmail({conversation:email_content,userId})
+                            }
+                        }  
+                    
+                       
+                     }
+                     else {
+
+                     
+
+                      start_action=false
+                  
+                      this.actions.send(key,action[1],null)
+                      }
+                    
+                    
+                  }
+                  
+              
+                }
+                else {
+
+                  
+                  ttsBuffer += json.response;
+                
+                 
+           
+                res.write(json.response);
+                }
             
             
 
@@ -153,6 +216,7 @@ async streamText (res:Response,answer:any ,key:string,userId:string) {
 
             res.end();
             streamEnded = true;
+            this.actions.complete(key)
             break;
           }
         }
@@ -179,83 +243,60 @@ async generateSpeech(text: string): Promise<Buffer> {
 
 
 enqueueTTS(text: string,key:string) {
-  this.ttsTextQueue.push({
+  let context = this.requests.get(key)
+  context?.ttsTextQueue.push({
     key,
-    seq: this.seq++,
+    seq: context.seq++,
     text
   });
-  this.processTTSQueueV2();
+  this.processTTSQueueV2(key);
 }
 
 
+private async processTTSQueueV2(key:string) {
+  const context = this.requests.get(key)
+  
+  if (context?.processing) return;
+  
+   if (!context) {
+    return
+   }
 
-private async waitForAudio() {
-  if (this.audioQueue.length > 0) return;
-  await new Promise<void>(r => this.audioWaiters.push(r));
-}
-
-private stripWavHeader(buffer: Buffer) {
-  // standard PCM WAV header is 44 bytes
-  return buffer.subarray(44);
-}
-
-private flushOrderedAudio() {
-  while (this.audioMap.has(this.nextAudioSeq)) {
-   
-    const audio = this.audioMap.get(this.nextAudioSeq)!;
-    const pcm = this.stripWavHeader(audio)
-    this.audioQueue.push(pcm);
-    this.audioMap.delete(this.nextAudioSeq);
-    this.nextAudioSeq++;
-  }
-
-  this.audioWaiters.forEach(r => r());
-  this.audioWaiters = [];
-}
-
-private notifyQueue() {
-  this.queueWaiters.forEach(r => r());
-  this.queueWaiters = [];
-}
-
-private async waitForQueue() {
-  if (this.ttsTextQueue.length > 0) return;
-  await new Promise<void>(r => this.queueWaiters.push(r));
-}
-
-private async processTTSQueueV2() {
-
-  if (this.processing) return;
-
-  this.processing = true;
+  context.processing = true;
  try{
-  while (this.ttsTextQueue.length > 0 || this.activeWorkers > 0) {
+  while ((context.ttsTextQueue.length > 0 || context.activeWorkers > 0) && !context.abortController.signal.aborted) {
 
-     if (this.ttsTextQueue.length === 0 && this.activeWorkers > 0) {
-      await this.waitForQueue();
+     if (context.ttsTextQueue.length === 0 && context.activeWorkers > 0) {
+      await Promise.race([
+          context.waitForQueue(),
+          abortPromise(context.abortController.signal)
+        ]);
+        continue
    }
 
     while (
-      this.ttsTextQueue.length > 0 &&
-      this.activeWorkers < this.MAX_TTS_WORKERS
+      context.ttsTextQueue.length > 0 &&
+      context.activeWorkers < context.MAX_TTS_WORKERS && 
+      !context.abortController.signal.aborted
     ) {
  
      
-      const item = this.ttsTextQueue.shift()!;
-
-      if (item.key !== this.activeRequestId) continue
-      this.activeWorkers++;
+      const item = context.ttsTextQueue.shift()!;
+      if (item.key !== context.key) continue
+    
+      context.activeWorkers++;
       let text = item.text.replace(/\n/g, '. ');
       this.generateSpeech(text)
         .then(audio => {
          
-           if (item.key !== this.activeRequestId) return;
-          this.audioMap.set(item.seq, audio);
-          this.flushOrderedAudio();
+          if (context.abortController.signal.aborted) return
+           if (item.key !== context.key) return;
+          context.audioMap.set(item.seq, audio);
+          context.flushOrderedAudio();
         })
         .finally(() => {
-          this.activeWorkers--;
-          this.notifyQueue();
+          context.activeWorkers--;
+          context.notifyQueue();
         });
       }
      
@@ -265,31 +306,50 @@ private async processTTSQueueV2() {
   }
  finally {
         
-  this.processing = false;
+  context.processing = false;
       }
 }
 
 async streamAudio(res: Response,key:string,uesrId:string) {
   const FRAME_BYTES = 640
 
+     let context: RequestContext | undefined;
+
+      while (!(context = this.requests.get(key))) {
+        await sleep(10);
+
+        if (res.writableEnded) return;
+      }
+
+
+  const { signal } = context.abortController;
 
   const onClose = () => {
-    console.log("audio client disconnected");
-
+    context.abortController.abort();
   };
 
   res.on('close', onClose);
+
   
+  try {
+   
   while (!res.writableEnded) {
     
-    if (this.activeRequestId !== key) {
+     if (signal.aborted) {
+        console.log("request aborted");
+       break
+      }
+        if (
+          context.isTextDone &&
+        context.activeWorkers === 0 &&
+        context.audioQueue.length === 0
+      ) {
+        this.requests.delete(key);
+        break;
+      }
 
-              res.end();
-              return;
-    }
-
-    if (this.audioQueue.length > 0) {
-      let chunk = this.audioQueue.shift();
+    if (context.audioQueue.length > 0) {
+      let chunk = context.audioQueue.shift();
       if (chunk && chunk.length % 2 !== 0) {
           console.warn("odd PCM chunk — fixing");
           chunk = chunk.subarray(0, chunk.length - 1);
@@ -300,22 +360,24 @@ async streamAudio(res: Response,key:string,uesrId:string) {
           chunk = chunk.subarray(FRAME_BYTES);
 
           if (!res.write(part)) {
-              await new Promise<void>(resolve =>
-                res.once("drain", resolve)
-              );
+              await once(res,'drain')
             }
-            await new Promise(r => setTimeout(r, 20));
+             await sleep(5)
+            if (signal.aborted) break
         }
 
     } else {
-      res.write(Buffer.alloc(0));
+    
 
-      await this.waitForAudio();
-      if (this.activeRequestId !== key) {
-          res.end();
-          return;
-        }
+      await context.waitForAudio();
+     if (signal.aborted) break
     }
   }
 }
+finally {
+  res.off('close',onClose)
+
+  res.end()
+}
+} 
 }

@@ -36,7 +36,7 @@ export class ResponderService {
                 ${oldMessages.join("\n")}
                  ${memoryInstruction}
                 `;
-       console.log('summaryprompt',summaryPrompt)
+  
        let summary = await  fetch(OLLAMA_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -47,7 +47,7 @@ export class ResponderService {
     })})
     const json_res = await summary.json()
     const summaryText = json_res.response
-    console.log('summaryText',summaryText)
+   
     conversation.summary = summaryText.trim();
     return conversation
  
@@ -69,10 +69,10 @@ export class ResponderService {
     }
 
     async addAssistantMessages(assistant:string,userId:string) {
-      if (this.previous_question &&( this.previous_question === questionTypeEnum.GeneralContent
-         ||this.previous_question === questionTypeEnum.isCvContent)
-      ){
-      let q = 'Assistant Answer : '+ assistant
+      console.log('add Assistant triggered',assistant)
+      if (assistant)
+      {
+      let q = 'USER EMAIL : '+ assistant
       return  this.set_recentMessages(q,userId)
       }
     }
@@ -88,9 +88,58 @@ export class ResponderService {
         conversation.recentMessages =
           conversation.recentMessages.slice(-3);
       }
-      console.log('messages being stored',conversation.recentMessages)
+    
       this.conversation.set(userId,conversation)
 
+
+    }
+
+    get_systme_prompt () {
+
+      return `
+              ### Instructions
+
+                You can trigger ONLY ONE action per response.
+                Do NOT output multiple ACTION fields.
+
+                If the user asks about CV, resume, experience, or curriculum vitae:
+                ACTION: SHOW_CV
+
+                If the user asks about contacts, phone number, email, or how to reach Mohammad:
+                ACTION: SHOW_CONTACTS
+
+                If multiple actions are requested, prioritize:
+                1. SHOW_CV
+                2. SHOW_CONTACTS
+
+                If the user explicitly asks to send a message to Mohammad,
+                or writes a direct message intended for Mohammad (for example: 
+                "Tell Mohammad that...", 
+                "Please send this to Mohammad...",
+                "I want to contact Mohammad and say..."):
+
+                Return EXACTLY in this format ,The order of fields must NOT change :
+
+                ACTION: SEND_EMAIL
+                EMAIL_CONTENT: <verbatim user message>
+                STATUS: <STATUS_VALU> 
+
+                EMAIL_CONTENT must contain ONLY the user's message.
+                Do NOT modify, summarize, or rephrase it.
+                STATUS: contains Tow values : PENDING or APPROVED 
+                Approval is detected only if the user explicitly says:
+                "approve", "approved", "yes send it","ok","that's good", or "confirm send"
+                when user approved EMAIL_CONTENT , you must Retrun it Exactly in this format :
+                ACTION: SEND_EMAIL 
+                EMAIL_CONTENT: <verbative user message> 
+                STATUS: APPROVED
+
+
+                
+
+                If no action is needed:
+                ACTION: null
+      `
     }
 
      get_prompt (userQuestion:string,userId:string) {
@@ -125,15 +174,15 @@ export class ResponderService {
        
        const prompt =
               `
-               ${promptsList[questionType]}
-               ### Conversation Context
-                ${memory.recentMessages.join('\n')}  
-                ### User Question   
-                 ${userQuestion}
-                 ### Instructions
-                  Answer only the User Question.
-    
-                 
+                ${promptsList[questionType]}
+
+                ### Conversation Context
+                ${memory.recentMessages.join('\n')}
+
+                ### User Question
+                ${userQuestion}
+
+               
                     `
 
     return prompt

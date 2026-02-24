@@ -34,7 +34,7 @@ export class CvController {
      console.timeEnd("Ollama")
      await this.cvService.streamText(res,answer,body.key,body.userId)
      setImmediate(() => {
-   //if(body.assistantAnswer)this.cvResponder.addAssistantMessages(body.assistantAnswer, body.userId);
+   if(body.assistantAnswer)this.cvResponder.addAssistantMessages(body.assistantAnswer, body.userId);
    this.cvResponder.addUserRecentMessages(body.text, body.userId);
 });
 
