@@ -382,6 +382,7 @@ async streamAudio(res: Response,key:string,uesrId:string) {
   const { signal } = context.abortController;
 
   const onClose = () => {
+    console.log('audio res closed')
     context.abortController.abort();
   };
 
@@ -396,14 +397,7 @@ async streamAudio(res: Response,key:string,uesrId:string) {
         console.log("request aborted");
        break
       }
-      //   if (
-      //     context.isTextDone &&
-      //   context.activeWorkers === 0 &&
-      //   context.audioQueue.length === 0
-      // ) {
-      //   this.requests.delete(key);
-      //   break;
-      // }
+
 
     if (context.audioQueue.length > 0) {
       let chunk = context.audioQueue.shift();

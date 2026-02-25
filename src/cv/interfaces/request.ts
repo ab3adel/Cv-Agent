@@ -11,7 +11,7 @@ export class RequestContext {
   abortController: AbortController
   ttsTextQueue: TTSJob[] = []
   audioMap =new Map<number, Buffer>()
-  audionEnabled=false
+
   activeWorkers = 0
   processing = false
    seq = 0;
