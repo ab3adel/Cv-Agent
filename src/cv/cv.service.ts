@@ -18,7 +18,7 @@ import { NotifierService } from 'src/notifier/notifier.service';
 
 
 
-@Injectable({scope:Scope.REQUEST})
+@Injectable()
 export class CvService {
 
     private requests : Map<string,RequestContext>= new Map()

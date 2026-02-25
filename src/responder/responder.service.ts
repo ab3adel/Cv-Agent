@@ -155,6 +155,7 @@ export class ResponderService {
           [questionTypeEnum.isCvContent]:`
           Instructions:
           - Answer based on Mohammad's CV.
+          - If CV information is missing/uncertain, say you’re not sure and ask a follow-up question; don’t hallucinate
           - Keep answers short (max 2–3 lines).
           - Be positive and professional.
       
