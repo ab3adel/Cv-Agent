@@ -346,6 +346,14 @@ private async processTTSQueueV2(key:string) {
           context.audioMap.set(item.seq, audio);
           context.flushOrderedAudio();
         })
+        .catch(err => {
+          console.log('TTS generation error', err)
+          if (context.abortController.signal.aborted) return
+          if (item.key !== context.key) return;
+          // keep sequence moving so later audio chunks do not get stuck behind a failed TTS job
+          context.audioMap.set(item.seq, Buffer.alloc(44));
+          context.flushOrderedAudio();
+        })
         .finally(() => {
           context.activeWorkers--;
           context.notifyQueue();
@@ -381,6 +389,10 @@ async streamAudio(res: Response,key:string,uesrId:string) {
 
   const { signal } = context.abortController;
 
+  if (context.ttsTextQueue.length > 0 || context.activeWorkers > 0) {
+    this.processTTSQueueV2(key);
+  }
+
   const onClose = () => {
     context.abortController.abort();
   };
@@ -396,14 +408,15 @@ async streamAudio(res: Response,key:string,uesrId:string) {
         console.log("request aborted");
        break
       }
-      //   if (
-      //     context.isTextDone &&
-      //   context.activeWorkers === 0 &&
-      //   context.audioQueue.length === 0
-      // ) {
-      //   this.requests.delete(key);
-      //   break;
-      // }
+      if (
+        context.isTextDone &&
+        context.activeWorkers === 0 &&
+        context.audioQueue.length === 0 &&
+        context.ttsTextQueue.length === 0 &&
+        context.audioMap.size === 0
+      ) {
+        break;
+      }
 
     if (context.audioQueue.length > 0) {
       let chunk = context.audioQueue.shift();
@@ -419,7 +432,6 @@ async streamAudio(res: Response,key:string,uesrId:string) {
           if (!res.write(part)) {
               await once(res,'drain')
             }
-             await sleep(5)
             if (signal.aborted) break
         }
 
@@ -451,7 +463,10 @@ cleanupIfDone(key: string) {
   const audioDone =
     !context.audioEnabled ||
     (context.activeWorkers === 0 &&
-     context.audioQueue.length === 0);
+     context.audioQueue.length === 0 &&
+     context.ttsTextQueue.length === 0 &&
+     context.audioMap.size === 0 &&
+     context.processing === false);
 
   if (textDone && audioDone) {
 
