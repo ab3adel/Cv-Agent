@@ -403,7 +403,8 @@ async streamAudio(res: Response,key:string,uesrId:string) {
 
   
   try {
-   
+   let nextFrameAt = Date.now();
+
   while (!res.writableEnded) {
     
      if (signal.aborted) {
@@ -436,8 +437,16 @@ async streamAudio(res: Response,key:string,uesrId:string) {
             }
 
             const frameDurationMs = Math.max(1, Math.round((part.length / AUDIO_BYTES_PER_SECOND) * 1000));
-            await sleep(frameDurationMs)
-            if (signal.aborted) break
+            nextFrameAt += frameDurationMs;
+            const waitMs = nextFrameAt - Date.now();
+
+            if (waitMs > 0) {
+              await sleep(waitMs)
+            } else {
+              // we're already behind realtime, so skip extra delay to avoid audible gaps
+              nextFrameAt = Date.now();
+            }
+            
         }
 
     } else {
