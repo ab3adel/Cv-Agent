@@ -11,6 +11,7 @@ export class RequestContext {
   abortController: AbortController
   ttsTextQueue: TTSJob[] = []
   audioMap =new Map<number, Buffer>()
+  audionEnabled=false
   activeWorkers = 0
   processing = false
    seq = 0;
@@ -20,6 +21,11 @@ export class RequestContext {
   audioWaiters: (() => void)[] = [];
   queueWaiters : (() => void)[] = [];
   isTextDone:boolean= false
+  audioEnabled:boolean=false
+  pendingEmails: {
+    userId:string,
+    conversation:string
+  }|null
 
 
   waitForAudio() {

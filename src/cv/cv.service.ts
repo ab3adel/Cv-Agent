@@ -1,11 +1,10 @@
-import { Inject, Injectable ,MessageEvent} from '@nestjs/common';
+import { Inject, Injectable ,MessageEvent, Scope} from '@nestjs/common';
 import axios from 'axios';
 import { ResponderService } from 'src/responder/responder.service';
-import * as fs from 'fs'
-import FormData from 'form-data'
+
 import { OllamaWarmer } from 'src/core/ollamaWarmer';
 import {Response} from 'express'
-import { OLLAMA_URL, PIPER_URL } from 'src/core/constants';
+import { OLLAMA_ONLINE, OLLAMA_URL, PIPER_URL } from 'src/core/constants';
 import { QuestionDto } from './dto/create-cv.dto';
 import { MessageUpdaterService } from 'src/message-updater/message-updater.service';
 import { questionTypeEnum } from 'src/responder/tools/interfaces';
@@ -19,17 +18,23 @@ import { NotifierService } from 'src/notifier/notifier.service';
 
 
 
-@Injectable()
+@Injectable({scope:Scope.REQUEST})
 export class CvService {
 
     private requests : Map<string,RequestContext>= new Map()
+
     constructor(
          private readonly responder:ResponderService ,
         private readonly warmer : OllamaWarmer ,
         private readonly MessageUpdater :MessageUpdaterService,
         private readonly actions : ActionsService,
         private readonly notifier : NotifierService
-){}
+
+){
+   setInterval(() => {
+      console.log("Active contexts:", this.requests.size);
+    }, 5000);
+}
 
 
 async askModel (questiobBody:QuestionDto):Promise<any> {
@@ -43,7 +48,7 @@ async askModel (questiobBody:QuestionDto):Promise<any> {
      const context = new RequestContext(key)
      this.requests.set(key,context)
     
-    
+    try {
      this.MessageUpdater.send(key,"Analyzing the question ...")
     
     const questionType = this.responder.detectIntent(text)
@@ -53,6 +58,7 @@ async askModel (questiobBody:QuestionDto):Promise<any> {
     else {
       this.MessageUpdater.send(key,"Thinking ...")
     }
+    
     console.time("TTFT")
     const res =  await fetch(OLLAMA_URL, {
     method: 'POST',
@@ -68,12 +74,19 @@ async askModel (questiobBody:QuestionDto):Promise<any> {
       `,
       stream: true,
       
-    }),
+    }),signal:context.abortController.signal
   });
      this.MessageUpdater.send(key,"Generating the Answer")
-     this.MessageUpdater.complete(key);
+    
       return res
-
+} 
+catch(err) {
+  console.log('ask model error',err)
+}
+finally {
+ this.cleanupIfDone(key)
+   this.MessageUpdater.complete(key);
+}
 
 
 }
@@ -97,32 +110,52 @@ async streamText (res:Response,answer:any ,key:string,userId:string) {
     let streamEnded = false;
 
 
-    res.on('close', () => {
+    res.on('close', async () => {
       console.log('client disconnected');
       streamEnded = true;
-    });
 
-      while (!streamEnded) {
+          try {
+            await reader.cancel();
+          } catch {}
+
+          const context = this.requests.get(key);
+          context?.abortController.abort();
+          if (context){
+            context.pendingEmails=null
+            context.isTextDone=true
+          }
+          
+    });
+    
+    try {
+      while (true) {
+        if (streamEnded)break
         const { value, done } = await reader.read();
         if (done) {
            
            if(context) {
             context.isTextDone=true
-            context.notifyAudio();
+            if (context.audioEnabled)context.notifyAudio();
+           
+        
           }
           break
         };
    
         if (context?.key !== key) {
             // stop generating old response
-              await reader.cancel();
-              res.end();
-              return;
+          context?.abortController.abort();
+            await reader.cancel();
+          if(context)context.isTextDone=true
+            res.end();
+          
+            break;
           }
           if (context?.abortController.signal.aborted) {
               await reader.cancel();
+              context.isTextDone=true
               res.end();
-              return;
+              break;
             }
               
         buffer += decoder.decode(value, { stream: true });
@@ -165,7 +198,11 @@ async streamText (res:Response,answer:any ,key:string,userId:string) {
                                 
                             this.actions.send(key,action[1] ,email_status+'/'+email_content)
                             if (email_status ==='APPROVED'){
-                                this.notifier.sendEmail({conversation:email_content,userId})
+                                context.pendingEmails={
+                                  conversation:email_content,
+                                  userId
+                                }
+                               
                             }
                         }  
                     
@@ -201,7 +238,7 @@ async streamText (res:Response,answer:any ,key:string,userId:string) {
                 ttsBuffer.split(/\s+/).length > 8  ||
              /[.!?,]\s$/.test(ttsBuffer)
             ) {
-              this.enqueueTTS(ttsBuffer,key);
+             this.enqueueTTS(ttsBuffer,key);
               ttsBuffer = '';
             }
           }
@@ -209,19 +246,34 @@ async streamText (res:Response,answer:any ,key:string,userId:string) {
           if (json.done) {
             if (ttsBuffer.trim()) {
              
-              this.enqueueTTS(ttsBuffer,key);
+             this.enqueueTTS(ttsBuffer,key);
               ttsBuffer = '';
             }
             
 
             res.end();
             streamEnded = true;
-            this.actions.complete(key)
+            context.isTextDone=true
             break;
           }
         }
      
       }
+    }
+    catch(err) {
+      console.log(err)
+    }
+    finally {
+ 
+     
+      
+       if (context?.pendingEmails) {
+              this.notifier.sendEmail(context.pendingEmails)
+        }
+       this.cleanupIfDone(key)
+       this.actions.complete(key);
+    }
+  
 } 
 
 async generateSpeech(text: string): Promise<Buffer> {
@@ -249,7 +301,7 @@ enqueueTTS(text: string,key:string) {
     seq: context.seq++,
     text
   });
-  this.processTTSQueueV2(key);
+ if (context?.audioEnabled) this.processTTSQueueV2(key);
 }
 
 
@@ -307,20 +359,25 @@ private async processTTSQueueV2(key:string) {
  finally {
         
   context.processing = false;
+ 
       }
 }
 
 async streamAudio(res: Response,key:string,uesrId:string) {
+  
   const FRAME_BYTES = 640
-
+   let retries = 0;
      let context: RequestContext | undefined;
 
       while (!(context = this.requests.get(key))) {
         await sleep(10);
-
+        retries++;
+    
         if (res.writableEnded) return;
+        if (retries > 500) return;
       }
-
+  
+      context.audioEnabled=true
 
   const { signal } = context.abortController;
 
@@ -339,14 +396,14 @@ async streamAudio(res: Response,key:string,uesrId:string) {
         console.log("request aborted");
        break
       }
-        if (
-          context.isTextDone &&
-        context.activeWorkers === 0 &&
-        context.audioQueue.length === 0
-      ) {
-        this.requests.delete(key);
-        break;
-      }
+      //   if (
+      //     context.isTextDone &&
+      //   context.activeWorkers === 0 &&
+      //   context.audioQueue.length === 0
+      // ) {
+      //   this.requests.delete(key);
+      //   break;
+      // }
 
     if (context.audioQueue.length > 0) {
       let chunk = context.audioQueue.shift();
@@ -376,8 +433,32 @@ async streamAudio(res: Response,key:string,uesrId:string) {
 }
 finally {
   res.off('close',onClose)
+  this.cleanupIfDone(key)
 
   res.end()
 }
 } 
+
+
+
+cleanupIfDone(key: string) {
+  const context = this.requests.get(key);
+  console.log('cleanupIfDone',context)
+  if (!context ) return;
+
+  const textDone = context.isTextDone === true;
+
+  const audioDone =
+    !context.audioEnabled ||
+    (context.activeWorkers === 0 &&
+     context.audioQueue.length === 0);
+
+  if (textDone && audioDone) {
+
+  
+    this.requests.delete(key);
+
+    console.log("Cleaned context:", key);
+  }
+}
 }
