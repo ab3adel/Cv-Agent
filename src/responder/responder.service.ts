@@ -1,9 +1,8 @@
-import { Inject, Injectable, Scope } from '@nestjs/common';
-import { REQUEST } from '@nestjs/core';
+import { Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 
 import * as path from 'path';
-import { cvKeywords, greetingKeywords } from './tools/regex';
+import { cvPatternKeywords, cvStrongKeywords, cvWeakKeywords, greetingKeywords } from './tools/regex';
 import { conversation, questionTypeEnum } from './tools/interfaces';
 import { OLLAMA_URL } from 'src/core/constants';
 
@@ -189,41 +188,47 @@ export class ResponderService {
     return prompt
     }
       detectIntent(question: string):questionTypeEnum {
-            const t = question.toLowerCase();
-            const cvRegexes = cvKeywords.map(
-               word => new RegExp(`\\b${word}s?\\b`, 'i')
-            );
+            const text = question.toLowerCase().trim();
+            const wordsCount = text.split(/\s+/).filter(Boolean).length;
 
-            const greetingRegexes = greetingKeywords.map(
-              word => new RegExp(`\\b${this.escapeRegex(word)}\\b`, "i")
-            );
-            const cvScore = cvRegexes.reduce((s, word) =>
-              s + (word.test(t) ? 1 : 0),
+            const cvStrongScore = cvStrongKeywords.reduce((score, keyword) =>
+              score + (this.containsKeyword(text, keyword) ? 2 : 0),
             0);
 
-            const greetingScore = greetingRegexes.reduce((s, word) =>
-              s + (word.test(t) ? 1 : 0),
+            const cvWeakScore = cvWeakKeywords.reduce((score, keyword) =>
+              score + (this.containsKeyword(text, keyword) ? 1 : 0),
+            0);
+
+            const cvPatternScore = cvPatternKeywords.reduce((score, pattern) =>
+              score + (pattern.test(text) ? 2 : 0),
+            0);
+
+            const cvScore = cvStrongScore + cvWeakScore + cvPatternScore;
+
+            const greetingScore = greetingKeywords.reduce((score, keyword) =>
+              score + (this.containsKeyword(text, keyword) ? 1 : 0),
             0);
 
             const isGreetingOnly =
               greetingScore > 0 &&
-              cvScore === 0
+              cvScore === 0 &&
+              wordsCount <= 8;
 
-            if (cvScore > 0){
-             
-              return questionTypeEnum.isCvContent
+            if (cvScore >= 2) {
+              return questionTypeEnum.isCvContent;
             }
 
-           else if (isGreetingOnly){
-           
-              return questionTypeEnum.isGreeting
-           }
-            
-            return questionTypeEnum.GeneralContent
+            if (isGreetingOnly) {
+              return questionTypeEnum.isGreeting;
+            }
+
+            return questionTypeEnum.GeneralContent;
         }
 
-        private escapeRegex(word: string) {
-  return word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        private containsKeyword(text: string, keyword: string) {
+  const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(`(?:^|[^a-z0-9])${escaped}(?:$|[^a-z0-9])`, 'i');
+  return pattern.test(text);
 }
 
 }
