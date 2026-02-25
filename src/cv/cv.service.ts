@@ -374,6 +374,7 @@ private async processTTSQueueV2(key:string) {
 async streamAudio(res: Response,key:string,uesrId:string) {
   
   const FRAME_BYTES = 640
+  const AUDIO_BYTES_PER_SECOND = 16000 * 2
    let retries = 0;
      let context: RequestContext | undefined;
 
@@ -433,6 +434,9 @@ async streamAudio(res: Response,key:string,uesrId:string) {
           if (!res.write(part)) {
               await once(res,'drain')
             }
+
+            const frameDurationMs = Math.max(1, Math.round((part.length / AUDIO_BYTES_PER_SECOND) * 1000));
+            await sleep(frameDurationMs)
             if (signal.aborted) break
         }
 
