@@ -395,6 +395,7 @@ async streamAudio(res: Response,key:string,uesrId:string) {
   }
 
   const onClose = () => {
+    console.log('audio res closed')
     context.abortController.abort();
   };
 
@@ -445,7 +446,7 @@ async streamAudio(res: Response,key:string,uesrId:string) {
               // we're already behind realtime, so skip extra delay to avoid audible gaps
               nextFrameAt = Date.now();
             }
-            if (signal.aborted) break
+            
         }
 
     } else {
