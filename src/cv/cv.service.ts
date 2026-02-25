@@ -395,6 +395,7 @@ async streamAudio(res: Response,key:string,uesrId:string) {
   }
 
   const onClose = () => {
+    console.log('audio res closed')
     context.abortController.abort();
   };
 
